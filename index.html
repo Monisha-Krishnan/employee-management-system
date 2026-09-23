@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Personnel Ledger — Employee Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F1EA;
+    --ink: #17302A;
+    --ink-soft: #3E5A52;
+    --brass: #B0793C;
+    --brass-deep: #8C5E28;
+    --line: #DAD4C2;
+    --card: #FBFAF6;
+    --danger: #9C3B3B;
+    --radius: 3px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14201C; --ink: #EDE7D9; --ink-soft: #B7C9C2; --card: #1B2A25; --line: #2C3E37;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Inter', Arial, sans-serif; min-height: 100%;
+  }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; margin: 0; }
+  .hidden { display: none !important; }
+
+  /* Login */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .login-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 40px 36px; width: 100%; max-width: 360px;
+  }
+  .login-card h1 { font-size: 1.7rem; margin-bottom: 4px; }
+  .login-card p.sub { color: var(--ink-soft); margin: 0 0 24px; font-size: 0.92rem; }
+  label { display: block; font-size: 0.82rem; color: var(--ink-soft); margin: 14px 0 5px; }
+  input, select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--paper); color: var(--ink); font-family: inherit; font-size: 0.95rem;
+  }
+  input:focus, select:focus, button:focus-visible {
+    outline: 2px solid var(--brass); outline-offset: 1px;
+  }
+  button {
+    font-family: inherit; cursor: pointer; border: none; border-radius: var(--radius);
+    font-size: 0.9rem; font-weight: 500;
+  }
+  .btn-primary {
+    background: var(--ink); color: var(--paper); padding: 11px 18px; width: 100%; margin-top: 22px;
+  }
+  .btn-brass { background: var(--brass); color: #fff; padding: 9px 16px; }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); padding: 8px 14px; }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 10px; font-size: 0.8rem; }
+  .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 12px; min-height: 1em; }
+
+  /* App shell */
+  #app { display: flex; min-height: 100vh; }
+  aside {
+    width: 220px; flex-shrink: 0; background: var(--ink); color: var(--paper);
+    padding: 28px 20px; display: flex; flex-direction: column;
+  }
+  aside .brand { font-family: 'Fraunces', serif; font-size: 1.25rem; margin-bottom: 2px; }
+  aside .brand-sub { font-size: 0.72rem; color: #A9BDB5; margin-bottom: 34px; }
+  nav button {
+    display: block; width: 100%; text-align: left; background: none; color: #D9E3DE;
+    padding: 10px 12px; margin-bottom: 4px; border-radius: var(--radius); font-size: 0.92rem;
+  }
+  nav button.active { background: rgba(255,255,255,0.1); color: #fff; }
+  nav button:hover { background: rgba(255,255,255,0.06); }
+  aside .logout { margin-top: auto; color: #A9BDB5; border: 1px solid #33473F; }
+
+  main { flex: 1; padding: 36px 40px; overflow-x: auto; }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 26px; flex-wrap: wrap; gap: 12px; }
+  .page-head h2 { font-size: 1.5rem; }
+  .page-head p { color: var(--ink-soft); margin: 4px 0 0; font-size: 0.9rem; }
+
+  .stat-row { display: flex; gap: 16px; margin-bottom: 30px; flex-wrap: wrap; }
+  .stat {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 20px; min-width: 150px;
+  }
+  .stat .num { font-family: 'Fraunces', serif; font-size: 1.7rem; color: var(--brass-deep); }
+  .stat .label { font-size: 0.78rem; color: var(--ink-soft); }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .toolbar input { max-width: 280px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 0.88rem; white-space: nowrap; }
+  th { font-weight: 500; color: var(--ink-soft); font-size: 0.78rem; }
+  tr:last-child td { border-bottom: none; }
+  td.actions { display: flex; gap: 8px; }
+  .empty-row td { text-align: center; color: var(--ink-soft); padding: 30px; white-space: normal; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(20,20,15,0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10;
+  }
+  .modal { background: var(--card); border-radius: var(--radius); padding: 28px 30px; width: 100%; max-width: 420px; }
+  .modal h3 { margin-bottom: 18px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--paper); padding: 11px 20px; border-radius: var(--radius);
+    font-size: 0.88rem; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 720px) {
+    #app { flex-direction: column; }
+    aside { width: 100%; flex-direction: row; align-items: center; padding: 14px 18px; }
+    aside .brand-sub { display: none; }
+    nav { display: flex; margin-left: 20px; }
+    nav button { width: auto; margin-right: 4px; }
+    aside .logout { margin-top: 0; margin-left: auto; padding: 8px 12px; }
+    main { padding: 24px 18px; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>Personnel Ledger</h1>
+    <p class="sub">Admin sign-in required</p>
+    <label for="user">Username</label>
+    <input id="user" autocomplete="username">
+    <label for="pass">Password</label>
+    <input id="pass" type="password" autocomplete="current-password">
+    <button class="btn-primary" onclick="login()">Sign in</button>
+    <p class="error-msg" id="login-error"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">Personnel Ledger</div>
+    <div class="brand-sub">Employee Management</div>
+    <nav>
+      <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">Dashboard</button>
+      <button class="nav-btn" data-view="directory" onclick="showView('directory')">Employee Directory</button>
+    </nav>
+    <button class="logout" onclick="logout()">Sign out</button>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="view-dashboard">
+      <div class="page-head">
+        <div><h2>Dashboard</h2><p>Overview of your workforce records.</p></div>
+        <button class="btn-brass" onclick="openModal()">+ Add Employee</button>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="num" id="stat-count">0</div><div class="label">Total Employees</div></div>
+        <div class="stat"><div class="num" id="stat-payroll">₹0</div><div class="label">Monthly Net Payroll</div></div>
+        <div class="stat"><div class="num" id="stat-avg">₹0</div><div class="label">Average Net Salary</div></div>
+      </div>
+      <h3 style="font-size:1.05rem; margin-bottom:12px;">Recently Added</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Net Salary</th></tr></thead>
+        <tbody id="recent-body"></tbody>
+      </table>
+    </section>
+
+    <!-- DIRECTORY -->
+    <section id="view-directory" class="hidden">
+      <div class="page-head">
+        <div><h2>Employee Directory</h2><p>Search, edit, or remove records.</p></div>
+        <button class="btn-brass" onclick="openModal()">+ Add Employee</button>
+      </div>
+      <div class="toolbar">
+        <input id="search-box" placeholder="Search by ID or name…" oninput="renderDirectory()">
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Designation</th><th>Basic</th><th>Net Salary</th><th>Actions</th></tr></thead>
+        <tbody id="directory-body"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-backdrop hidden" id="modal-backdrop">
+  <div class="modal">
+    <h3 id="modal-title">Add Employee</h3>
+    <input type="hidden" id="edit-id">
+    <div class="form-grid">
+      <div><label for="f-id">Employee ID</label><input id="f-id" type="number"></div>
+      <div><label for="f-name">Name</label><input id="f-name"></div>
+      <div><label for="f-dept">Department</label><input id="f-dept"></div>
+      <div><label for="f-desig">Designation</label><input id="f-desig"></div>
+      <div style="grid-column:1/-1;"><label for="f-salary">Basic Salary (₹)</label><input id="f-salary" type="number"></div>
+    </div>
+    <p class="error-msg" id="modal-error"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-brass" onclick="saveEmployee()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---- Data layer (mirrors the Java Employee/EmployeeManager logic) ----
+  let employees = JSON.parse(localStorage.getItem('employees') || '[]');
+
+  function netSalary(basic) {
+    const hra = basic * 0.20, da = basic * 0.10, pf = basic * 0.12;
+    return basic + hra + da - pf;
+  }
+  function persist() { localStorage.setItem('employees', JSON.stringify(employees)); }
+  function money(n) { return '₹' + n.toLocaleString('en-IN', {maximumFractionDigits: 0}); }
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ---- Auth ----
+  function login() {
+    const u = document.getElementById('user').value.trim();
+    const p = document.getElementById('pass').value;
+    if (u === 'admin' && p === 'admin123') {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      renderAll();
+    } else {
+      document.getElementById('login-error').textContent = 'Invalid username or password.';
+    }
+  }
+  function logout() {
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('user').value = ''; document.getElementById('pass').value = '';
+    document.getElementById('login-error').textContent = '';
+  }
+  document.getElementById('pass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  // ---- Navigation ----
+  function showView(view) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    document.getElementById('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
+    document.getElementById('view-directory').classList.toggle('hidden', view !== 'directory');
+    renderAll();
+  }
+
+  // ---- Modal ----
+  function openModal(id) {
+    document.getElementById('modal-error').textContent = '';
+    const isEdit = id !== undefined;
+    document.getElementById('modal-title').textContent = isEdit ? 'Edit Employee' : 'Add Employee';
+    document.getElementById('edit-id').value = isEdit ? id : '';
+    const emp = isEdit ? employees.find(e => e.id === id) : null;
+    document.getElementById('f-id').value = emp ? emp.id : '';
+    document.getElementById('f-id').disabled = isEdit;
+    document.getElementById('f-name').value = emp ? emp.name : '';
+    document.getElementById('f-dept').value = emp ? emp.dept : '';
+    document.getElementById('f-desig').value = emp ? emp.desig : '';
+    document.getElementById('f-salary').value = emp ? emp.basic : '';
+    document.getElementById('modal-backdrop').classList.remove('hidden');
+  }
+  function closeModal() { document.getElementById('modal-backdrop').classList.add('hidden'); }
+
+  function saveEmployee() {
+    const editId = document.getElementById('edit-id').value;
+    const id = parseInt(document.getElementById('f-id').value);
+    const name = document.getElementById('f-name').value.trim();
+    const dept = document.getElementById('f-dept').value.trim();
+    const desig = document.getElementById('f-desig').value.trim();
+    const basic = parseFloat(document.getElementById('f-salary').value);
+
+    if (!id || !name || !dept || !desig || !basic || basic <= 0) {
+      document.getElementById('modal-error').textContent = 'Please fill every field with valid values.';
+      return;
+    }
+    if (!editId && employees.some(e => e.id === id)) {
+      document.getElementById('modal-error').textContent = 'An employee with this ID already exists.';
+      return;
+    }
+    if (editId) {
+      const emp = employees.find(e => e.id === parseInt(editId));
+      Object.assign(emp, { name, dept, desig, basic });
+    } else {
+      employees.push({ id, name, dept, desig, basic });
+    }
+    persist(); closeModal(); renderAll();
+    toast(editId ? 'Employee updated.' : 'Employee added.');
+  }
+
+  function deleteEmployee(id) {
+    if (!confirm('Delete this employee record?')) return;
+    employees = employees.filter(e => e.id !== id);
+    persist(); renderAll();
+    toast('Employee deleted.');
+  }
+
+  // ---- Rendering ----
+  function renderAll() {
+    document.getElementById('stat-count').textContent = employees.length;
+    const totalNet = employees.reduce((s, e) => s + netSalary(e.basic), 0);
+    document.getElementById('stat-payroll').textContent = money(totalNet);
+    document.getElementById('stat-avg').textContent = money(employees.length ? totalNet / employees.length : 0);
+
+    const recent = employees.slice(-5).reverse();
+    document.getElementById('recent-body').innerHTML = recent.length ? recent.map(e => `
+      <tr><td>${e.id}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.dept)}</td><td>${money(netSalary(e.basic))}</td></tr>
+    `).join('') : `<tr class="empty-row"><td colspan="4">No employees yet. Click "+ Add Employee" to create your first record.</td></tr>`;
+
+    renderDirectory();
+  }
+
+  function renderDirectory() {
+    const q = (document.getElementById('search-box').value || '').toLowerCase().trim();
+    const filtered = employees.filter(e => !q || String(e.id).includes(q) || e.name.toLowerCase().includes(q));
+    document.getElementById('directory-body').innerHTML = filtered.length ? filtered.map(e => `
+      <tr>
+        <td>${e.id}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.dept)}</td><td>${escapeHtml(e.desig)}</td>
+        <td>${money(e.basic)}</td><td>${money(netSalary(e.basic))}</td>
+        <td class="actions">
+          <button class="btn-ghost" onclick="openModal(${e.id})">Edit</button>
+          <button class="btn-danger" onclick="deleteEmployee(${e.id})">Delete</button>
+        </td>
+      </tr>
+    `).join('') : `<tr class="empty-row"><td colspan="7">No matching records.</td></tr>`;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+</script>
+</body>
+</html>
